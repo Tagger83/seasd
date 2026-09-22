@@ -6,15 +6,20 @@ local TeleportService = game:GetService("TeleportService")
 
 local player = Players.LocalPlayer
 
--- Esperar a que carguen los remotes
+local SCRIPT_URL = "https://raw.githubusercontent.com/Tagger83/seasd/refs/heads/main/ascas"
+
+local queue =
+    queue_on_teleport
+    or queueonteleport
+    or (syn and syn.queue_on_teleport)
+
+-- Esperar Remote
 local target = ReplicatedStorage
     :WaitForChild("Remotes")
     :WaitForChild("Misc")
     :WaitForChild("ClaimDailyCheck")
 
-task.wait(3)
-
--- Mandar ClaimDailyCheck
+-- Mandar Remote
 local success, result = pcall(function()
     if target:IsA("RemoteEvent") then
         target:FireServer(1, "test", true)
@@ -25,25 +30,31 @@ local success, result = pcall(function()
 end)
 
 if success then
-    print("✓ RESULT:", result)
+    print("✓ ClaimDailyCheck:", result)
 else
-    warn("✗ ERROR:", result)
+    warn("✗ ClaimDailyCheck ERROR:", result)
 end
 
--- Esperar antes del rejoin
-task.wait(3)
+task.wait(5)
 
--- TU URL RAW AQUÍ
-local SCRIPT_URL = "https://raw.githubusercontent.com/Tagger83/seasd/refs/heads/main/ascas"
-
-local queue =
-    queue_on_teleport
-    or queueonteleport
-    or (syn and syn.queue_on_teleport)
-
+-- Preparar ejecución después del teleport
 if queue then
-    queue('loadstring(game:HttpGet("' .. SCRIPT_URL .. '"))()')
+    queue([[
+        repeat task.wait() until game:IsLoaded()
+        task.wait(5)
+
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/Tagger83/seasd/refs/heads/main/ascas"
+        ))()
+    ]])
+
+    print("✓ Script queued")
+else
+    warn("✗ Tu executor no tiene queue_on_teleport")
+    return
 end
+
+task.wait(1)
 
 -- Rejoin al mismo servidor
 TeleportService:TeleportToPlaceInstance(
