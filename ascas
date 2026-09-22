@@ -1,0 +1,53 @@
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+
+local player = Players.LocalPlayer
+
+-- Esperar a que carguen los remotes
+local target = ReplicatedStorage
+    :WaitForChild("Remotes")
+    :WaitForChild("Misc")
+    :WaitForChild("ClaimDailyCheck")
+
+task.wait(3)
+
+-- Mandar ClaimDailyCheck
+local success, result = pcall(function()
+    if target:IsA("RemoteEvent") then
+        target:FireServer(1, "test", true)
+        return "Fired Successfully"
+    elseif target:IsA("RemoteFunction") then
+        return target:InvokeServer(1, "test", true)
+    end
+end)
+
+if success then
+    print("✓ RESULT:", result)
+else
+    warn("✗ ERROR:", result)
+end
+
+-- Esperar antes del rejoin
+task.wait(3)
+
+-- TU URL RAW AQUÍ
+local SCRIPT_URL = "https://raw.githubusercontent.com/USUARIO/REPO/main/script.lua"
+
+local queue =
+    queue_on_teleport
+    or queueonteleport
+    or (syn and syn.queue_on_teleport)
+
+if queue then
+    queue('loadstring(game:HttpGet("' .. SCRIPT_URL .. '"))()')
+end
+
+-- Rejoin al mismo servidor
+TeleportService:TeleportToPlaceInstance(
+    game.PlaceId,
+    game.JobId,
+    player
+)
