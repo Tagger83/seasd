@@ -34,7 +34,7 @@ end
 task.wait(3)
 
 -- TU URL RAW AQUÍ
-local SCRIPT_URL = "https://raw.githubusercontent.com/USUARIO/REPO/main/script.lua"
+local SCRIPT_URL = "https://raw.githubusercontent.com/Tagger83/seasd/refs/heads/main/ascas"
 
 local queue =
     queue_on_teleport
