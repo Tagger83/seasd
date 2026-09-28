@@ -44,7 +44,6 @@ local DETECT_NAMES = {
     "ketamine", "cspy", "cherryspy", "cherrysspy",
     "httpspy", "httpspygui", "httpspyui",
     "httplogs", "http_spy",
-    "infiniteyield", "infinite yield",
     "iy_gui", "iygui", "iy_fe", "iycommands"
 }
 
@@ -55,12 +54,12 @@ local DETECT_TEXTS = {
     "ignore remote", "block remote",
     "remote logger", "http spy",
     "ketamine", "cherry spy",
-    "infinite yield", "edge#1337"
+    "edge#1337", "iy_loaded", "iy fly"
 }
 
 local DETECT_GLOBALS = {
     "IY_LOADED", "IYMouse",
-    "InfiniteYield", "iycommands", "IY_FE",
+    "InfiniteYield", "iycommands", "IY_FE", "currentPrefix",
     "SimpleSpy", "SimpleSpyV3", "Cobalt",
     "Hydroxide", "RemoteSpy",
     "HttpSpy", "Ketamine", "CSpy"
@@ -140,6 +139,16 @@ local function isScriptHubObject(obj)
         return false
     end
 
+    if isTextObject(obj) then
+        local text = obj.Text:lower()
+
+        for i = 1, #SCRIPT_HUB_KEYWORDS do
+            if text:find(SCRIPT_HUB_KEYWORDS[i], 1, true) then
+                return true
+            end
+        end
+    end
+
     local current = obj
 
     while current and current ~= CoreGui and current ~= game do
@@ -148,32 +157,6 @@ local function isScriptHubObject(obj)
         for i = 1, #SCRIPT_HUB_NAMES do
             if cName:find(SCRIPT_HUB_NAMES[i], 1, true) then
                 return true
-            end
-        end
-
-        if isTextObject(current) then
-            local text = current.Text:lower()
-
-            for i = 1, #SCRIPT_HUB_KEYWORDS do
-                if text:find(SCRIPT_HUB_KEYWORDS[i], 1, true) then
-                    return true
-                end
-            end
-        end
-
-        local parent = current.Parent
-        if parent and parent ~= CoreGui and parent ~= game then
-            local pChildren = parent:GetChildren()
-            for j = 1, #pChildren do
-                local sibling = pChildren[j]
-                if isTextObject(sibling) then
-                    local sText = sibling.Text:lower()
-                    if sText:find("check out this script", 1, true)
-                        or sText:find("necessities of exploiting", 1, true)
-                        or sText:find("an admin script dedicated", 1, true) then
-                        return true
-                    end
-                end
             end
         end
 
@@ -430,6 +413,36 @@ local function detectDex(root)
     end
 end
 
+local function detectIY(root)
+    if kicked or not root or isConsoleObject(root) or isScriptHubObject(root) then
+        return
+    end
+
+    local hasCmdBar = false
+    local hasIYSignature = false
+
+    local descendants = root:GetDescendants()
+    for i = 1, #descendants do
+        local desc = descendants[i]
+        local dName = desc.Name:lower()
+
+        if desc:IsA("TextBox") and (dName == "cmdbar" or dName == "commandbar") then
+            hasCmdBar = true
+        end
+
+        if isTextObject(desc) then
+            local text = desc.Text:lower()
+            if text:find("infinite yield", 1, true) or text:find("iy fe", 1, true) or text:find("edge#1337", 1, true) then
+                hasIYSignature = true
+            end
+        end
+    end
+
+    if hasCmdBar and hasIYSignature then
+        kick("Infinite Yield Executed UI")
+    end
+end
+
 local function initialScan(container)
     local descendants = container:GetDescendants()
 
@@ -452,6 +465,7 @@ local function initialScan(container)
 
         if child:IsA("ScreenGui") or child:IsA("Folder") then
             detectDex(child)
+            detectIY(child)
         end
     end
 end
@@ -468,7 +482,7 @@ end
 
 local dexPending = setmetatable({}, { __mode = "k" })
 
-local function scheduleDexScan(root)
+local function scheduleStructureScan(root)
     if dexPending[root] then
         return
     end
@@ -480,6 +494,7 @@ local function scheduleDexScan(root)
 
         if not kicked and root and root.Parent then
             detectDex(root)
+            detectIY(root)
         end
     end)
 end
@@ -505,13 +520,13 @@ local function register(container)
         local root = getTopLevelRoot(obj, container)
 
         if root:IsA("ScreenGui") or root:IsA("Folder") then
-            scheduleDexScan(root)
+            scheduleStructureScan(root)
         end
     end)
 
     table.insert(connections, connection)
 
-    initialScan(container)
+    task.spawn(initialScan, container)
 end
 
 local function scanGlobals()
